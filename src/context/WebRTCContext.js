@@ -20,10 +20,9 @@ export function WebRTCProvider({ children }) {
 	const peerConnection = useRef(null);
 
 	useEffect(() => {
-		const serverUrl =
-			process.env.NEXT_PUBLIC_SOCKET_SERVER_URL ||
-			"wss://your-websocket-server.herokuapp.com";
-		const ws = new WebSocket(serverUrl);
+		const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+		const wsUrl = `${wsProtocol}//${window.location.host}/api/socket`;
+		const ws = new WebSocket(wsUrl);
 
 		ws.onopen = () => {
 			console.log("Connected to WebSocket server");
