@@ -19,24 +19,24 @@ const nextConfig = {
 					{
 						key: "Content-Security-Policy",
 						value:
-							"default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws: wss: http://localhost:8000 http://0.0.0.0:8000",
+							"default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws: wss: http: https:;",
 					},
 					{ key: "Access-Control-Allow-Origin", value: "*" },
+					{ key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+					{ key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
 				],
 			},
 		];
 	},
 	async rewrites() {
-		return [
-			{
-				source: "/api/:path*",
-				destination: "http://localhost:8000/api/:path*",
-			},
-			{
-				source: "/socket.io/:path*",
-				destination: "http://localhost:8000/socket.io/:path*",
-			},
-		];
+		return process.env.NODE_ENV === "development"
+			? [
+					{
+						source: "/socket.io/:path*",
+						destination: "http://localhost:3001/socket.io/:path*",
+					},
+			  ]
+			: [];
 	},
 	allowedDevOrigins: ["192.168.123.8"],
 };
