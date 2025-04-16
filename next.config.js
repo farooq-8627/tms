@@ -39,6 +39,12 @@ const nextConfig = {
 			: [];
 	},
 	allowedDevOrigins: ["192.168.123.8"],
+	experimental: {
+		serverActions: {
+			bodySizeLimit: "2mb",
+		},
+		serverComponentsExternalPackages: ["ws"],
+	},
 };
 
 module.exports = nextConfig;

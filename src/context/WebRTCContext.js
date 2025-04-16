@@ -18,8 +18,9 @@ export function WebRTCProvider({ children }) {
 	const [remoteStream, setRemoteStream] = useState(null);
 	const [error, setError] = useState(null);
 	const peerConnection = useRef(null);
+	const reconnectTimeout = useRef(null);
 
-	useEffect(() => {
+	const connectWebSocket = () => {
 		const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 		const wsUrl = `${wsProtocol}//${window.location.host}/api/socket`;
 		const ws = new WebSocket(wsUrl);
@@ -27,6 +28,7 @@ export function WebRTCProvider({ children }) {
 		ws.onopen = () => {
 			console.log("Connected to WebSocket server");
 			setSocket(ws);
+			setError(null);
 		};
 
 		ws.onerror = (error) => {
@@ -37,9 +39,24 @@ export function WebRTCProvider({ children }) {
 		ws.onclose = () => {
 			console.log("Disconnected from WebSocket server");
 			setSocket(null);
+
+			// Attempt to reconnect after 5 seconds
+			if (reconnectTimeout.current) {
+				clearTimeout(reconnectTimeout.current);
+			}
+			reconnectTimeout.current = setTimeout(connectWebSocket, 5000);
 		};
 
+		return ws;
+	};
+
+	useEffect(() => {
+		const ws = connectWebSocket();
+
 		return () => {
+			if (reconnectTimeout.current) {
+				clearTimeout(reconnectTimeout.current);
+			}
 			if (ws) {
 				ws.close();
 			}
