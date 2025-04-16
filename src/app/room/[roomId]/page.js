@@ -3,11 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useWebRTC } from "@/context/WebRTCContext";
 import { useSearchParams } from "next/navigation";
-import { use } from "react";
 
 export default function RoomPage({ params }) {
-	const resolvedParams = use(params);
-	const { roomId } = resolvedParams;
+	const { roomId } = params;
 	const searchParams = useSearchParams();
 	const mode = searchParams.get("mode");
 	const { localStream, remoteStream, connectionState, createRoom, joinRoom } =
