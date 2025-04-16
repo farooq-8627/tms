@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioVision</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Socket.IO for WebRTC signaling -->
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- MediaPipe Face Mesh -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+  
+  <!-- Face-API.js for emotion detection -->
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Animate.css for animations -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  
+  <!-- Custom Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif']
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          boxShadow: {
+            'neon': '0 0 5px theme(colors.blue.400), 0 0 20px theme(colors.blue.600)',
+            'neon-red': '0 0 5px theme(colors.red.400), 0 0 20px theme(colors.red.600)',
+            'neon-green': '0 0 5px theme(colors.green.400), 0 0 20px theme(colors.green.600)',
+            'neon-pulse': '0 0 5px theme(colors.blue.400), 0 0 20px theme(colors.blue.600)',
+          },
+          keyframes: {
+            shimmer: {
+              '100%': { transform: 'translateX(100%)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Custom styles -->
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0f172a;
+      color: #e2e8f0;
+      background-image: 
+        radial-gradient(circle at 25% 15%, rgba(59, 130, 246, 0.1) 0%, transparent 25%),
+        radial-gradient(circle at 75% 85%, rgba(244, 63, 94, 0.08) 0%, transparent 25%);
+    }
+    
+    /* Glass effect */
+    .glass {
+      backdrop-filter: blur(12px);
+      background-color: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .glass-darker {
+      backdrop-filter: blur(12px);
+      background-color: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Card hover effects */
+    .metrics-card {
+      transition: all 0.3s ease;
+    }
+    
+    .metrics-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Card backgrounds */
+    .gradient-pulse {
+      background-size: 200% 200%;
+      animation: gradientAnimation 8s ease infinite;
+    }
+    
+    @keyframes gradientAnimation {
+      0% { background-position: 0% 50% }
+      50% { background-position: 100% 50% }
+      100% { background-position: 0% 50% }
+    }
+    
+    /* Cardboard box styling */
+    .cardboard-front, .cardboard-back, .cardboard-left, 
+    .cardboard-right, .cardboard-top, .cardboard-bottom {
+      position: absolute;
+      background-color: #ba8e65;
+      border: 2px solid #8b5e34;
+      transition: all 0.3s ease;
+    }
+    
+    .cardboard-texture {
+      background-image: 
+        linear-gradient(45deg, #ba8e65 25%, transparent 25%),
+        linear-gradient(-45deg, #ba8e65 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ba8e65 75%),
+        linear-gradient(-45deg, transparent 75%, #ba8e65 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      opacity: 0.2;
+    }
+    
+    .cardboard-tape {
+      background-color: #c3c3c3;
+      opacity: 0.8;
+    }
+    
+    /* Progress bars */
+    .progress-bar-container {
+      height: 8px;
+      background-color: rgba(100, 116, 139, 0.2);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .progress-bar {
+      height: 100%;
+      transition: width 0.5s ease-in-out;
+      border-radius: 6px;
+    }
+    
+    .heart-rate-bar {
+      background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+    }
+    
+    .attention-bar {
+      background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Shimmer loading effect */
+    .shimmer {
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .shimmer::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      transform: translateX(-100%);
+      background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0,
+        rgba(255, 255, 255, 0.05) 20%,
+        rgba(255, 255, 255, 0.1) 60%,
+        rgba(255, 255, 255, 0)
+      );
+      animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+      100% {
+        transform: translateX(100%);
+      }
+    }
+    
+    /* 3D transforms */
+    .preserve-3d {
+      transform-style: preserve-3d;
+    }
+    
+    /* Mobile adjustments */
+    @media (max-width: 640px) {
+      .mobile-fullscreen {
+        height: 100vh;
+        width: 100vw;
+      }
+    }
+    
+    /* Gradient text */
+    .gradient-text {
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      background-image: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    }
+  </style>
+</head>
+<body>
+  <div class="min-h-screen flex flex-col">
+    <!-- Navbar -->
+    <nav class="glass-darker p-4 shadow-md mb-4 sticky top-0 z-10 backdrop-blur-lg">
+      <div class="container mx-auto flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg mr-2 flex items-center justify-center shadow-neon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </div>
+          <h1 class="text-2xl font-display font-bold gradient-text">BioVision</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="hidden md:block relative h-2 w-2">
+            <div class="absolute top-0 left-0 w-full h-full bg-green-500 rounded-full animate-pulse"></div>
+          </div>
+          <div class="text-sm font-medium text-gray-300">Real-time Biometric Analysis</div>
+        </div>
+      </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto p-4">
+      <!-- Welcome Screen -->
+      <div id="welcome-screen" class="my-8 glass rounded-xl shadow-lg p-8 max-w-xl mx-auto border border-slate-700 animate__animated animate__fadeIn">
+        <div class="text-center mb-6">
+          <div class="inline-block w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-3 flex items-center justify-center shadow-neon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </div>
+          <h2 class="text-3xl font-display font-bold text-white mb-2">Welcome to BioVision</h2>
+          <p class="text-gray-300 text-lg max-w-lg mx-auto">Real-time biometric analysis through your phone's camera</p>
+        </div>
+        
+        <div class="bg-slate-800/50 p-6 rounded-lg mb-6 border border-slate-700/50">
+          <div class="mb-5">
+            <label for="room-id" class="block text-sm font-medium text-gray-300 mb-2">Connection Room ID</label>
+            <div class="relative">
+              <input type="text" id="room-id" class="w-full p-3 pl-10 rounded-lg border border-slate-600 bg-slate-900/70 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" placeholder="Enter a unique room ID">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-4">
+            <button id="createRoomBtn" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-medium py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg hover:shadow-neon flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Create Room (Phone)
+            </button>
+            <button id="joinRoomBtn" class="flex-1 bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 text-white font-medium py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg hover:shadow-neon-green flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Join Room (Laptop)
+            </button>
+          </div>
+        </div>
+        
+        <div class="bg-slate-800/30 rounded-lg border border-slate-700/30 p-5">
+          <h3 class="text-lg font-display font-semibold mb-3 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            How it works:
+          </h3>
+          <ol class="list-none space-y-3 text-gray-300">
+            <li class="flex items-start">
+              <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-500/20 text-blue-400 text-sm mr-3 mt-0.5">1</span>
+              <span>On your phone, generate a room ID and click "Create Room"</span>
+            </li>
+            <li class="flex items-start">
+              <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-500/20 text-blue-400 text-sm mr-3 mt-0.5">2</span>
+              <span>Use the same Room ID on your laptop and click "Join Room"</span>
+            </li>
+            <li class="flex items-start">
+              <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-500/20 text-blue-400 text-sm mr-3 mt-0.5">3</span>
+              <span>Allow camera access when prompted on your phone</span>
+            </li>
+            <li class="flex items-start">
+              <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-500/20 text-blue-400 text-sm mr-3 mt-0.5">4</span>
+              <span>View real-time biometric data from your phone on your laptop</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+      
+      <!-- Connection Screen (initially hidden) -->
+      <div id="connection-screen" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Left Column (Video + Data Visualization) -->
+          <div class="flex flex-col gap-6">
+            <!-- Video Feed Panel -->
+            <div class="glass rounded-xl shadow-lg overflow-hidden border border-slate-700/50 metrics-card">
+              <div class="relative aspect-video bg-slate-900">
+                <!-- Video Background Pattern (visible before video loads) -->
+                <div class="absolute inset-0 grid grid-cols-8 grid-rows-5 gap-0.5 opacity-5">
+                  <div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div>
+                  <div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div>
+                  <div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div>
+                  <div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div>
+                  <div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div>
+                  <div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div>
+                  <div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div>
+                  <div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div><div class="bg-white"></div>
+                </div>
+                
+                <!-- Loading Animation (only shown before video initializes) -->
+                <div class="absolute inset-0 flex items-center justify-center animate__animated animate__fadeIn">
+                  <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                
+                <!-- Video Element -->
+                <video id="localVideo" class="w-full h-full object-cover relative z-10" autoplay playsinline muted></video>
+                
+                <!-- Overlay Canvas -->
+                <canvas id="overlayCanvas" class="absolute top-0 left-0 w-full h-full z-20"></canvas>
+                
+                <!-- Camera Frame corners for visual effect -->
+                <div class="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-blue-400 rounded-tl-lg z-30"></div>
+                <div class="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-blue-400 rounded-tr-lg z-30"></div>
+                <div class="absolute bottom-2 left-2 w-8 h-8 border-b-2 border-l-2 border-blue-400 rounded-bl-lg z-30"></div>
+                <div class="absolute bottom-2 right-2 w-8 h-8 border-b-2 border-r-2 border-blue-400 rounded-br-lg z-30"></div>
+                
+                <!-- Status Indicator -->
+                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-slate-900/90 to-slate-800/90 text-white text-sm py-1.5 px-4 rounded-full shadow-lg border border-slate-700/50 flex items-center z-30">
+                  <div class="relative h-2 w-2 mr-2">
+                    <div class="absolute top-0 left-0 w-full h-full bg-blue-500 rounded-full animate-ping"></div>
+                    <div class="absolute top-0 left-0 w-full h-full bg-blue-500 rounded-full"></div>
+                  </div>
+                  <span id="camera-status">Awaiting connection...</span>
+                </div>
+              </div>
+              
+              <!-- Stream Info Bar -->
+              <div class="bg-slate-800/80 border-t border-slate-700/30 py-2 px-4 flex justify-between items-center text-sm text-gray-400">
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                  Live Biometric Feed
+                </div>
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                  </svg>
+                  Real-time Analysis
+                </div>
+              </div>
+            </div>
+            
+            <!-- 3D Cardboard Box - Phone Mount Visualization -->
+            <div class="glass rounded-xl shadow-lg p-6 border border-slate-700/50 metrics-card">
+              <h3 class="text-lg font-display font-semibold flex items-center mb-4">
+                <div class="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg mr-3 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                </div>
+                Phone Mount Guide
+              </h3>
+              
+              <div class="bg-slate-800/40 rounded-xl border border-slate-700/30 p-4">
+                <div class="relative h-48 w-full flex items-center justify-center overflow-hidden">
+                  <div id="cardboardBox" class="relative w-48 h-48 transform-style preserve-3d">
+                    <!-- Box faces will be added by JavaScript -->
+                  </div>
+                </div>
+                
+                <div class="mt-4 flex items-start gap-3 text-gray-300 text-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p>For the most accurate readings, place your phone in a stable position. A simple cardboard box with a hole cut out for the camera works well. Make sure your face is well-lit and visible.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Column (Metrics) -->
+          <div class="flex flex-col gap-6">
+            <!-- Top Row Metrics - 2 columns on medium+ screens -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Heart Rate Panel -->
+              <div class="glass rounded-xl shadow-lg p-5 border border-slate-700/50 metrics-card">
+                <div class="flex justify-between items-start mb-2">
+                  <h3 class="text-lg font-display font-semibold flex items-center">
+                    <div class="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg mr-3 flex items-center justify-center shadow-neon-red">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </div>
+                    Heart Rate
+                  </h3>
+                  <span class="text-sm bg-slate-700/50 text-gray-300 px-2 py-1 rounded-lg" id="heartRateStatus">--</span>
+                </div>
+                
+                <div class="flex items-center my-4">
+                  <div class="text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-600 mr-3 animate-pulse-slow">
+                    <span id="heartRate" class="shimmer">--</span>
+                  </div>
+                  <div class="text-xl text-gray-400 font-medium">BPM</div>
+                </div>
+                
+                <div class="progress-bar-container">
+                  <div id="heartRateBar" class="progress-bar heart-rate-bar w-0"></div>
+                </div>
+              </div>
+              
+              <!-- Emotion Panel -->
+              <div class="glass rounded-xl shadow-lg p-5 border border-slate-700/50 metrics-card">
+                <h3 class="text-lg font-display font-semibold flex items-center mb-2">
+                  <div class="w-8 h-8 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-lg mr-3 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  Emotion Detection
+                </h3>
+                
+                <div class="flex items-center justify-center py-4">
+                  <div class="text-6xl mr-5 animate__animated animate__pulse animate__infinite animate__slow"><span id="emotionEmoji">🔍</span></div>
+                  <div class="text-2xl text-white font-medium capitalize"><span id="dominantEmotion">scanning</span></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Second Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Attention Metrics Panel -->
+              <div class="glass rounded-xl shadow-lg p-5 border border-slate-700/50 metrics-card">
+                <div class="flex justify-between items-start mb-2">
+                  <h3 class="text-lg font-display font-semibold flex items-center">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg mr-3 flex items-center justify-center shadow-neon">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </div>
+                    Attention Metrics
+                  </h3>
+                  <span class="text-sm bg-slate-700/50 text-gray-300 px-2 py-1 rounded-lg" id="attentionStatus">--</span>
+                </div>
+                
+                <div class="flex items-center my-4">
+                  <div class="text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600 mr-3">
+                    <span id="attentionScore" class="shimmer">--</span>
+                  </div>
+                  <div class="text-xl text-gray-400 font-medium">/ 100</div>
+                </div>
+                
+                <div class="progress-bar-container">
+                  <div id="attentionBar" class="progress-bar attention-bar w-0"></div>
+                </div>
+              </div>
+              
+              <!-- Eye Tracking Visualization -->
+              <div class="glass rounded-xl shadow-lg p-5 border border-slate-700/50 metrics-card">
+                <h3 class="text-lg font-display font-semibold flex items-center mb-3">
+                  <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-fuchsia-600 rounded-lg mr-3 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                    </svg>
+                  </div>
+                  Eye Tracking
+                </h3>
+                
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                  <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/30">
+                    <div class="text-sm text-blue-400 mb-1">Left Eye</div>
+                    <div class="text-gray-200 truncate font-mono text-sm" id="leftEyeCoords">--</div>
+                  </div>
+                  <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/30">
+                    <div class="text-sm text-blue-400 mb-1">Right Eye</div>
+                    <div class="text-gray-200 truncate font-mono text-sm" id="rightEyeCoords">--</div>
+                  </div>
+                </div>
+                
+                <div class="h-28 bg-slate-900/70 rounded-lg overflow-hidden border border-slate-800">
+                  <canvas id="eyeTrackingCanvas" class="w-full h-full"></canvas>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Metrics Chart -->
+            <div class="glass rounded-xl shadow-lg p-5 border border-slate-700/50 metrics-card">
+              <h3 class="text-lg font-display font-semibold flex items-center mb-4">
+                <div class="w-8 h-8 bg-gradient-to-br from-teal-500 to-green-600 rounded-lg mr-3 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                Metrics History
+              </h3>
+              <div class="h-48 bg-slate-900/30 rounded-lg p-2 border border-slate-700/30">
+                <canvas id="metricsChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="glass-darker mt-8 text-center py-6 text-sm text-gray-400 border-t border-slate-700/20">
+      <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg mr-2 flex items-center justify-center shadow-neon">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </div>
+            <span class="font-display font-semibold gradient-text">BioVision</span>
+          </div>
+          
+          <div class="flex gap-6">
+            <a href="#" class="text-gray-400 hover:text-blue-400 transition-colors">Privacy</a>
+            <a href="#" class="text-gray-400 hover:text-blue-400 transition-colors">Terms</a>
+            <a href="#" class="text-gray-400 hover:text-blue-400 transition-colors">Contact</a>
+          </div>
+          
+          <div class="text-gray-500">
+            &copy; 2025 BioVision - All rights reserved
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+  
+  <!-- Face API Models -->
+  <div id="models"></div>
+  
+  <!-- Custom Scripts -->
+  <script src="/js/utils.js"></script>
+  <script src="/js/webrtc.js"></script>
+  <script src="/js/face-api-utils.js"></script>
+  <script src="/js/mediapipe-utils.js"></script>
+  <script src="/js/heart-rate.js"></script>
+  <script src="/js/attention-metrics.js"></script>
+  <script src="/js/ai-biometrics.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

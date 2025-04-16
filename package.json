@@ -1,0 +1,39 @@
+{
+	"name": "workspace",
+	"version": "1.0.0",
+	"main": "next.config.js",
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "next lint",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"dependencies": {
+		"@mediapipe/face_mesh": "^0.4.1633559619",
+		"@neondatabase/serverless": "^1.0.0",
+		"autoprefixer": "^10.4.21",
+		"concurrently": "^9.1.2",
+		"cors": "^2.8.5",
+		"dotenv": "^16.5.0",
+		"drizzle-kit": "^0.31.0",
+		"drizzle-orm": "^0.42.0",
+		"encoding": "^0.1.13",
+		"express": "^5.1.0",
+		"face-api.js": "^0.22.2",
+		"framer-motion": "^12.7.3",
+		"next": "^15.3.0",
+		"openai": "^4.94.0",
+		"pg": "^8.14.1",
+		"postcss": "^8.5.3",
+		"react": "^19.1.0",
+		"react-dom": "^19.1.0",
+		"socket.io": "^4.8.1",
+		"socket.io-client": "^4.8.1",
+		"tailwindcss": "^3.3.2"
+	}
+}

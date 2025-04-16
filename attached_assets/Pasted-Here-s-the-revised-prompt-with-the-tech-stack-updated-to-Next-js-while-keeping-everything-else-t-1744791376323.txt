@@ -1,0 +1,25 @@
+Here’s the revised prompt with the tech stack updated to **Next.js** while keeping everything else the same:
+
+---
+
+I want you to generate a full **Next.js** web application (using the App Router and Tailwind CSS) that:
+
+1. **Streams live video** from a phone’s camera to a laptop browser via WebRTC and a Node.js + Socket.io signaling server.
+2. **Overlays real‑time eye‑tracking** on the incoming video using **MediaPipe Face Mesh** directly in the browser.
+3. **Estimates heart rate** from the video frames via a remote‑PPG (rPPG) algorithm in JavaScript or sends raw frames to a **Python backend** for rPPG processing and returns BPM.
+4. **Detects facial emotions** using **face‑api.js** and displays the dominant emotion.
+5. **Computes attention metrics** (fixation count, average fixation duration, saccades) from the eye‑tracking data.
+6. **Presents a polished UI** styled with **Tailwind CSS** and animated using **Framer Motion**:
+   - On load, show an **animated cardboard box** that opens to reveal a phone mockup and a “Welcome to BioVision” message.
+   - Display the **live video inside the phone mockup**.
+   - Overlay **eye landmarks** on the video via an HTML5 canvas.
+   - Show a **metrics panel** with real‑time fixation count, average fixation duration, current heart rate, and detected emotion.
+7. **Organize code** into **Next.js pages/components** (`CardboardBox`, `PhoneRenderer`, `VideoOverlay`, `EmotionDetector`, `MetricsPanel`), a **React Context** for WebRTC state and signaling, and a small **Node.js signaling server** (`server/index.js`) using Socket.io.
+8. Include all necessary setup steps:
+   - Next.js + Tailwind CSS configuration
+   - face‑api.js model loading
+   - WebRTC signaling setup
+   - How to run both the signaling server and the Next.js app together (e.g., with `concurrently`)
+9. Provide **complete code files**, **configurations**, and brief **run instructions** so I can clone, install, and run the entire system end‑to‑end on phone + laptop over LAN.
+
+Generate all code files and clearly explain the structure and flow where necessary.
