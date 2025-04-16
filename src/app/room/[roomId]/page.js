@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWebRTC } from "@/context/WebRTCContext";
 import { useSearchParams } from "next/navigation";
 import { use } from "react";
@@ -12,6 +12,7 @@ export default function RoomPage({ params }) {
 	const mode = searchParams.get("mode");
 	const { localStream, remoteStream, connectionState, createRoom, joinRoom } =
 		useWebRTC();
+	const [copied, setCopied] = useState(false);
 
 	const localVideoRef = useRef(null);
 	const remoteVideoRef = useRef(null);
@@ -48,26 +49,56 @@ export default function RoomPage({ params }) {
 		}
 	}, [remoteStream]);
 
+	const copyRoomId = () => {
+		navigator.clipboard.writeText(roomId);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	};
+
 	return (
 		<main className="min-h-screen bg-[#0f172a] text-[#e2e8f0] p-4">
 			<div className="max-w-6xl mx-auto">
-				<div className="mb-4 flex items-center justify-between">
-					<div>
-						<h1 className="text-2xl font-bold text-white">Room: {roomId}</h1>
-						<p className="text-slate-400">
-							Mode: {mode === "host" ? "Phone (Host)" : "Laptop (Viewer)"}
+				{/* Room Info Section */}
+				<div className="mb-6 p-4 bg-slate-800/50 rounded-lg">
+					<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+						<div>
+							<h1 className="text-2xl font-bold text-white mb-2">
+								{mode === "host" ? "Streaming Room" : "Viewing Room"}
+							</h1>
+							<div className="flex items-center space-x-2">
+								<p className="text-slate-400">Room ID:</p>
+								<code className="px-3 py-1 bg-slate-700 rounded font-mono text-white">
+									{roomId}
+								</code>
+								<button
+									onClick={copyRoomId}
+									className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+								>
+									{copied ? "Copied!" : "Copy"}
+								</button>
+							</div>
+						</div>
+						<div className="flex items-center space-x-2 bg-slate-700/50 px-4 py-2 rounded">
+							<span
+								className={`inline-block w-3 h-3 rounded-full ${
+									connectionState === "connected"
+										? "bg-green-500"
+										: "bg-red-500"
+								}`}
+							/>
+							<span className="text-sm">
+								{connectionState === "connected"
+									? "Connected"
+									: "Waiting to connect..."}
+							</span>
+						</div>
+					</div>
+					{mode === "host" && (
+						<p className="mt-4 text-sm text-slate-400 bg-slate-700/30 p-3 rounded">
+							👋 Share this Room ID with someone to let them view your stream
+							from their laptop
 						</p>
-					</div>
-					<div className="flex items-center space-x-2">
-						<span
-							className={`inline-block w-3 h-3 rounded-full ${
-								connectionState === "connected" ? "bg-green-500" : "bg-red-500"
-							}`}
-						/>
-						<span className="text-sm text-slate-400">
-							{connectionState === "connected" ? "Connected" : "Disconnected"}
-						</span>
-					</div>
+					)}
 				</div>
 
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
